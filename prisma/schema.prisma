@@ -1,0 +1,206 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+}
+
+//////////////////////////////////
+// CUSTOMER (Flutter App User)
+//////////////////////////////////
+
+model Customer {
+  id        String     @id @default(uuid())
+  name      String
+  email     String     @unique
+  phone     String?
+  password  String
+
+  bookings  Booking[]
+
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+}
+
+//////////////////////////////////
+// ADMIN ROLE
+//////////////////////////////////
+
+model AdminRole {
+  id          String    @id @default(uuid())
+  name        String    @unique
+  description String?
+
+  admins      Admin[]
+
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
+//////////////////////////////////
+// ADMIN
+//////////////////////////////////
+
+model Admin {
+  id               String     @id @default(uuid())
+  name             String
+  email            String     @unique
+  password         String
+
+  roleId           String
+  role             AdminRole @relation(fields: [roleId], references: [id])
+
+  venueId          String?
+  venue            Venue?    @relation(fields: [venueId], references: [id])
+
+  verifiedPayments Payment[] @relation("PaymentVerifier")
+
+  createdAt        DateTime   @default(now())
+  updatedAt        DateTime   @updatedAt
+}
+
+//////////////////////////////////
+// VENUE & FIELD
+//////////////////////////////////
+
+model Venue {
+  id          String    @id @default(uuid())
+  name        String
+  address     String
+  description String?
+  latitude    Float?
+  longitude   Float?
+
+  fields      Field[]
+  admins      Admin[]
+
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
+model Field {
+  id                                                    String        @id @default(uuid())
+  venueId                                               String
+  name                                                  String
+  type                                                  FieldType
+  isActive                                              Boolean       @default(true)
+
+  lengthMeter Float?        // panjang lapangan (meter)
+  widthMeter  Float?        // lebar lapangan (meter)
+
+  venue                                                 Venue        @relation(fields: [venueId], references: [id])
+  prices                                                FieldPrice[]
+  bookings                                              Booking[]
+  images      FieldImage[] // ⬅️ relasi ke gambar
+
+  createdAt                                             DateTime      @default(now())
+  updatedAt                                             DateTime      @updatedAt
+}
+
+
+model FieldImage {
+  id                                                    String    @id @default(uuid())
+  fieldId                                               String
+
+  imageUrl  String   // URL dari upload server / CDN
+  isPrimary                                             Boolean   @default(false)
+  order     Int?     // untuk urutan gambar di carousel
+
+  field                                                 Field    @relation(fields: [fieldId], references: [id], onDelete: Cascade)
+
+  createdAt                                             DateTime  @default(now())
+
+  @@index([fieldId])
+}
+
+
+enum FieldType {
+  SYNTHETIC
+  GRASS
+  INDOOR
+}
+
+//////////////////////////////////
+// FIELD PRICE
+//////////////////////////////////
+
+model FieldPrice {
+  id        String    @id @default(uuid())
+  fieldId   String
+
+  dayType   DayType
+  startHour Int
+  endHour   Int
+  price     Int
+
+  field     Field    @relation(fields: [fieldId], references: [id])
+
+  createdAt DateTime  @default(now())
+}
+
+enum DayType {
+  WEEKDAY
+  WEEKEND
+}
+
+//////////////////////////////////
+// BOOKING
+//////////////////////////////////
+
+model Booking {
+  id         String         @id @default(uuid())
+  customerId String
+  fieldId    String
+
+  startTime  DateTime
+  endTime    DateTime
+
+  status     BookingStatus  @default(PENDING)
+  totalPrice Int
+
+  customer   Customer      @relation(fields: [customerId], references: [id])
+  field      Field         @relation(fields: [fieldId], references: [id])
+  payment    Payment?
+
+  createdAt  DateTime       @default(now())
+  updatedAt  DateTime       @updatedAt
+
+  @@index([fieldId, startTime, endTime])
+}
+
+enum BookingStatus {
+  PENDING       // booking dibuat
+  WAITING_PAYMENT
+  PAID          // setelah admin ACC
+  CANCELLED
+  COMPLETED
+}
+
+//////////////////////////////////
+// PAYMENT (UPLOAD BUKTI + VERIFIKASI ADMIN)
+//////////////////////////////////
+
+model Payment {
+  id                                                                  String         @id @default(uuid())
+  bookingId                                                           String         @unique
+
+  proofUrl      String           // URL bukti transfer (hasil upload)
+  status                                                              PaymentStatus  @default(WAITING_VERIFICATION)
+
+  verifiedById                                                        String?
+  verifiedBy                                                          Admin?        @relation("PaymentVerifier", fields: [verifiedById], references: [id])
+
+  verifiedAt                                                          DateTime?
+  note                                                                String?
+
+  booking                                                             Booking       @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+
+  createdAt                                                           DateTime       @default(now())
+}
+
+enum PaymentStatus {
+  WAITING_VERIFICATION
+  APPROVED
+  REJECTED
+}
