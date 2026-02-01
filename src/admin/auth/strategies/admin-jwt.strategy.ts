@@ -9,7 +9,6 @@ export interface AdminJwtPayload {
   name: string;
   role: string;
   roleId: string;
-  venueId?: string;
   type: 'admin';
 }
 
@@ -36,7 +35,6 @@ export class AdminJwtStrategy extends PassportStrategy(Strategy, 'admin-jwt') {
         email: true,
         name: true,
         roleId: true,
-        venueId: true,
         role: {
           select: {
             id: true,

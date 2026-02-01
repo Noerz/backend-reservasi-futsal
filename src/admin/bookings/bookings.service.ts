@@ -38,7 +38,10 @@ export class BookingsService {
       today = false,
     } = params;
 
-    let { startDate, endDate } = params as { startDate?: string; endDate?: string };
+    let { startDate, endDate } = params as {
+      startDate?: string;
+      endDate?: string;
+    };
 
     const skip = (page - 1) * limit;
 
@@ -95,12 +98,6 @@ export class BookingsService {
               id: true,
               name: true,
               type: true,
-              venue: {
-                select: {
-                  id: true,
-                  name: true,
-                },
-              },
             },
           },
           payment: {
@@ -156,13 +153,6 @@ export class BookingsService {
             id: true,
             name: true,
             type: true,
-            venue: {
-              select: {
-                id: true,
-                name: true,
-                address: true,
-              },
-            },
           },
         },
         payment: {
@@ -227,12 +217,6 @@ export class BookingsService {
               id: true,
               name: true,
               type: true,
-              venue: {
-                select: {
-                  id: true,
-                  name: true,
-                },
-              },
             },
           },
           payment: {
@@ -263,7 +247,11 @@ export class BookingsService {
     };
   }
 
-  async verifyPayment(bookingId: string, dto: VerifyPaymentDto, adminId: string) {
+  async verifyPayment(
+    bookingId: string,
+    dto: VerifyPaymentDto,
+    adminId: string,
+  ) {
     const booking = await this.prisma.booking.findUnique({
       where: { id: bookingId },
       include: {
@@ -334,12 +322,6 @@ export class BookingsService {
             select: {
               id: true,
               name: true,
-              venue: {
-                select: {
-                  id: true,
-                  name: true,
-                },
-              },
             },
           },
         },
@@ -355,7 +337,6 @@ export class BookingsService {
     const emailDetails = {
       bookingId: updatedBooking.id,
       fieldName: updatedBooking.field.name,
-      venueName: updatedBooking.field.venue.name,
       startTime: booking.startTime,
       endTime: booking.endTime,
       totalPrice: booking.totalPrice,
@@ -388,14 +369,16 @@ export class BookingsService {
   async getStats(venueId?: string) {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-    
+
     const tomorrow = new Date(today);
     tomorrow.setDate(tomorrow.getDate() + 1);
 
     const firstDayOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
-    const firstDayOfNextMonth = new Date(today.getFullYear(), today.getMonth() + 1, 1);
-
-    const venueFilter = venueId ? { field: { venueId } } : {};
+    const firstDayOfNextMonth = new Date(
+      today.getFullYear(),
+      today.getMonth() + 1,
+      1,
+    );
 
     const [
       todayBookingsCount,
@@ -406,7 +389,6 @@ export class BookingsService {
       // Pesanan hari ini
       this.prisma.booking.count({
         where: {
-          ...venueFilter,
           startTime: {
             gte: today,
             lt: tomorrow,
@@ -416,7 +398,6 @@ export class BookingsService {
       // Pesanan aktif (PAID atau WAITING_PAYMENT)
       this.prisma.booking.count({
         where: {
-          ...venueFilter,
           status: {
             in: [BookingStatus.PAID, BookingStatus.WAITING_PAYMENT],
           },
@@ -425,7 +406,6 @@ export class BookingsService {
       // Pendapatan bulan ini (hanya yang PAID)
       this.prisma.booking.aggregate({
         where: {
-          ...venueFilter,
           status: BookingStatus.PAID,
           createdAt: {
             gte: firstDayOfMonth,
@@ -439,7 +419,6 @@ export class BookingsService {
       // Menunggu verifikasi
       this.prisma.booking.count({
         where: {
-          ...venueFilter,
           payment: {
             status: PaymentStatus.WAITING_VERIFICATION,
           },
@@ -452,7 +431,7 @@ export class BookingsService {
       data: {
         todayBookings: todayBookingsCount,
         activeBookings: activeBookingsCount,
-        monthlyRevenue: monthlyRevenue._sum.totalPrice || 0,
+        monthlyRevenue: monthlyRevenue._sum?.totalPrice || 0,
         pendingVerification: pendingVerificationCount,
       },
     };

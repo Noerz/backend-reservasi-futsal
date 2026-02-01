@@ -46,10 +46,6 @@ export class GetMobileFieldsQueryDto {
   search?: string;
 
   @IsOptional()
-  @IsString()
-  venueId?: string;
-
-  @IsOptional()
   @Transform(({ value }) => (value === undefined ? undefined : value === 'true' || value === true))
   @IsBoolean()
   onlyAvailable?: boolean;

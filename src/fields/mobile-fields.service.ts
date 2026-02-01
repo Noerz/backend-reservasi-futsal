@@ -111,7 +111,6 @@ export class MobileFieldsService {
     startHour?: number;
     durationHours?: number;
     search?: string;
-    venueId?: string;
     onlyAvailable?: boolean;
     page?: number;
     limit?: number;
@@ -123,13 +122,9 @@ export class MobileFieldsService {
 
     const where: any = {
       isActive: true,
-      ...(params.venueId ? { venueId: params.venueId } : {}),
       ...(params.search
         ? {
-            OR: [
-              { name: { contains: params.search } },
-              { venue: { name: { contains: params.search } } },
-            ],
+            name: { contains: params.search },
           }
         : {}),
     };
@@ -138,7 +133,6 @@ export class MobileFieldsService {
       this.prisma.field.findMany({
         where,
         include: {
-          venue: { select: { id: true, name: true } },
           prices: { orderBy: [{ dayType: 'asc' }, { startHour: 'asc' }] },
           images: { orderBy: [{ isPrimary: 'desc' }, { order: 'asc' }, { createdAt: 'asc' }] },
         },
@@ -179,7 +173,6 @@ export class MobileFieldsService {
           id: f.id,
           name: f.name,
           type: f.type,
-          venue: f.venue,
           imageUrl: primaryImageUrl,
           size: {
             lengthMeter: f.lengthMeter ?? null,
@@ -189,15 +182,13 @@ export class MobileFieldsService {
           isAvailable,
         };
       })
+      // Filter out fields that don't have a price for this slot
+      .filter((x) => x.pricePerHour !== null)
       .filter((x) => (params.onlyAvailable ? x.isAvailable : true))
       .sort((a, b) => {
         // Available first
         if (a.isAvailable !== b.isAvailable) return a.isAvailable ? -1 : 1;
-        // Then by venue name, then field name
-        const av = a.venue?.name ?? '';
-        const bv = b.venue?.name ?? '';
-        const venueCmp = av.localeCompare(bv);
-        if (venueCmp !== 0) return venueCmp;
+        // Then by field name
         return a.name.localeCompare(b.name);
       });
 
@@ -232,7 +223,6 @@ export class MobileFieldsService {
     const field = await this.prisma.field.findUnique({
       where: { id },
       include: {
-        venue: { select: { id: true, name: true } },
         prices: { orderBy: [{ dayType: 'asc' }, { startHour: 'asc' }] },
         images: { orderBy: [{ isPrimary: 'desc' }, { order: 'asc' }, { createdAt: 'asc' }] },
       },
@@ -241,6 +231,19 @@ export class MobileFieldsService {
     if (!field || !field.isActive) {
       return {
         message: 'Lapangan tidak ditemukan',
+        data: null,
+      };
+    }
+
+    const pricePerHour = this.getPricePerHourForSlot({
+      prices: field.prices,
+      slotStart: start,
+    });
+
+    // If no price available for this slot, return not available
+    if (pricePerHour === null) {
+      return {
+        message: 'Lapangan tidak tersedia untuk slot waktu ini',
         data: null,
       };
     }
@@ -254,11 +257,6 @@ export class MobileFieldsService {
       select: { id: true },
     });
 
-    const pricePerHour = this.getPricePerHourForSlot({
-      prices: field.prices,
-      slotStart: start,
-    });
-
     return {
       message: 'Detail lapangan (mobile) berhasil diambil',
       slot: {
@@ -269,7 +267,6 @@ export class MobileFieldsService {
         id: field.id,
         name: field.name,
         type: field.type,
-        venue: field.venue,
         imageUrl: field.images?.[0]?.imageUrl ?? null,
         size: {
           lengthMeter: field.lengthMeter ?? null,

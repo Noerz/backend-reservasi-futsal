@@ -20,7 +20,11 @@ export class EmailService {
     // Verify connection configuration
     this.transporter.verify((error) => {
       if (error) {
-        this.logger.error('Error configuring email transport', error.message, 'EmailService');
+        this.logger.error(
+          'Error configuring email transport',
+          error.message,
+          'EmailService',
+        );
       } else {
         this.logger.log('Email service is ready', 'EmailService');
       }
@@ -33,13 +37,13 @@ export class EmailService {
     bookingDetails: {
       bookingId: string;
       fieldName: string;
-      venueName: string;
       startTime: Date;
       endTime: Date;
       totalPrice: number;
     },
   ): Promise<void> {
-    const { bookingId, fieldName, venueName, startTime, endTime, totalPrice } = bookingDetails;
+    const { bookingId, fieldName, startTime, endTime, totalPrice } =
+      bookingDetails;
 
     const mailOptions = {
       from: `"${process.env.SMTP_FROM_NAME || 'Reservasi Futsal'}" <${process.env.SMTP_FROM_EMAIL || process.env.SMTP_USER}>`,
@@ -57,10 +61,6 @@ export class EmailService {
               <tr>
                 <td style="padding: 8px 0;"><strong>ID Booking:</strong></td>
                 <td style="padding: 8px 0;">${bookingId}</td>
-              </tr>
-              <tr>
-                <td style="padding: 8px 0;"><strong>Venue:</strong></td>
-                <td style="padding: 8px 0;">${venueName}</td>
               </tr>
               <tr>
                 <td style="padding: 8px 0;"><strong>Lapangan:</strong></td>
@@ -90,9 +90,16 @@ export class EmailService {
 
     try {
       await this.transporter.sendMail(mailOptions);
-      this.logger.log(`Booking approved email sent to ${customerEmail}`, 'EmailService');
+      this.logger.log(
+        `Booking approved email sent to ${customerEmail}`,
+        'EmailService',
+      );
     } catch (error) {
-      this.logger.error(`Failed to send email to ${customerEmail}`, error.message, 'EmailService');
+      this.logger.error(
+        `Failed to send email to ${customerEmail}`,
+        error.message,
+        'EmailService',
+      );
       // Don't throw - we don't want to fail the booking process if email fails
     }
   }
@@ -103,14 +110,20 @@ export class EmailService {
     bookingDetails: {
       bookingId: string;
       fieldName: string;
-      venueName: string;
       startTime: Date;
       endTime: Date;
       totalPrice: number;
       rejectionNote?: string;
     },
   ): Promise<void> {
-    const { bookingId, fieldName, venueName, startTime, endTime, totalPrice, rejectionNote } = bookingDetails;
+    const {
+      bookingId,
+      fieldName,
+      startTime,
+      endTime,
+      totalPrice,
+      rejectionNote,
+    } = bookingDetails;
 
     const mailOptions = {
       from: `"${process.env.SMTP_FROM_NAME || 'Reservasi Futsal'}" <${process.env.SMTP_FROM_EMAIL || process.env.SMTP_USER}>`,
@@ -127,11 +140,7 @@ export class EmailService {
             <table style="width: 100%; border-collapse: collapse;">
               <tr>
                 <td style="padding: 8px 0;"><strong>ID Booking:</strong></td>
-                <td style="padding: 8px 0;">${bookingId}</td>
-              </tr>
-              <tr>
-                <td style="padding: 8px 0;"><strong>Venue:</strong></td>
-                <td style="padding: 8px 0;">${venueName}</td>
+                <td style="paddin~g: 8px 0;">${bookingId}</td>
               </tr>
               <tr>
                 <td style="padding: 8px 0;"><strong>Lapangan:</strong></td>
@@ -148,12 +157,16 @@ export class EmailService {
             </table>
           </div>
 
-          ${rejectionNote ? `
+          ${
+            rejectionNote
+              ? `
             <div style="background-color: #fff3cd; padding: 15px; border-left: 4px solid #ffc107; margin: 20px 0;">
               <strong>Alasan:</strong>
               <p style="margin: 5px 0 0 0;">${rejectionNote}</p>
             </div>
-          ` : ''}
+          `
+              : ''
+          }
 
           <p>Silakan lakukan booking ulang dengan bukti pembayaran yang valid.</p>
           <p>Jika ada pertanyaan, silakan hubungi admin kami.</p>
@@ -168,9 +181,16 @@ export class EmailService {
 
     try {
       await this.transporter.sendMail(mailOptions);
-      this.logger.log(`Booking rejected email sent to ${customerEmail}`, 'EmailService');
+      this.logger.log(
+        `Booking rejected email sent to ${customerEmail}`,
+        'EmailService',
+      );
     } catch (error) {
-      this.logger.error(`Failed to send email to ${customerEmail}`, error.message, 'EmailService');
+      this.logger.error(
+        `Failed to send email to ${customerEmail}`,
+        error.message,
+        'EmailService',
+      );
       // Don't throw - we don't want to fail the booking process if email fails
     }
   }

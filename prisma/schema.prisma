@@ -51,9 +51,6 @@ model Admin {
   roleId           String
   role             AdminRole @relation(fields: [roleId], references: [id])
 
-  venueId          String?
-  venue            Venue?    @relation(fields: [venueId], references: [id])
-
   verifiedPayments Payment[] @relation("PaymentVerifier")
 
   createdAt        DateTime   @default(now())
@@ -61,27 +58,10 @@ model Admin {
 }
 
 //////////////////////////////////
-// VENUE & FIELD
+// FIELD
 //////////////////////////////////
-
-model Venue {
-  id          String    @id @default(uuid())
-  name        String
-  address     String
-  description String?
-  latitude    Float?
-  longitude   Float?
-
-  fields      Field[]
-  admins      Admin[]
-
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-}
-
 model Field {
   id                                                    String        @id @default(uuid())
-  venueId                                               String
   name                                                  String
   type                                                  FieldType
   isActive                                              Boolean       @default(true)
@@ -89,7 +69,6 @@ model Field {
   lengthMeter Float?        // panjang lapangan (meter)
   widthMeter  Float?        // lebar lapangan (meter)
 
-  venue                                                 Venue        @relation(fields: [venueId], references: [id])
   prices                                                FieldPrice[]
   bookings                                              Booking[]
   images      FieldImage[] // ⬅️ relasi ke gambar

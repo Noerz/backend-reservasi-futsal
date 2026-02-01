@@ -6,7 +6,6 @@ import { PrismaModule } from './prisma/prisma.module';
 import { AuthModule } from './auth/auth.module';
 import { RolesModule } from './admin/roles/roles.module';
 import { AdminAuthModule } from './admin/auth/admin-auth.module';
-import { VenuesModule } from './admin/venues/venues.module';
 import { FieldsModule } from './admin/fields/fields.module';
 import { AdminBookingsModule } from './admin/bookings/bookings.module';
 import { BookingModule } from './booking/booking.module';
@@ -19,7 +18,6 @@ import { MobileFieldsModule } from './fields/mobile-fields.module';
     AuthModule,
     RolesModule,
     AdminAuthModule,
-    VenuesModule,
     FieldsModule,
     AdminBookingsModule,
     BookingModule,

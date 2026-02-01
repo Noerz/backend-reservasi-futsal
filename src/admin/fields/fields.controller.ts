@@ -43,7 +43,6 @@ export class FieldsController {
     @Query('page', new DefaultValuePipe(1), ParseIntPipe) page: number,
     @Query('limit', new DefaultValuePipe(10), ParseIntPipe) limit: number,
     @Query('search') search?: string,
-    @Query('venueId') venueId?: string,
     @Query('type') type?: string,
     @Query('isActive', new ParseBoolPipe({ optional: true }))
     isActive?: boolean,
@@ -52,7 +51,6 @@ export class FieldsController {
       page,
       limit,
       search,
-      venueId,
       type,
       isActive,
     });

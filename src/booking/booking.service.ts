@@ -30,15 +30,6 @@ export class BookingService {
     // Validasi field exists dan active
     const field = await this.prisma.field.findUnique({
       where: { id: fieldId },
-      include: {
-        venue: {
-          select: {
-            id: true,
-            name: true,
-            address: true,
-          },
-        },
-      },
     });
 
     if (!field) {
@@ -125,13 +116,6 @@ export class BookingService {
             type: true,
             lengthMeter: true,
             widthMeter: true,
-            venue: {
-              select: {
-                id: true,
-                name: true,
-                address: true,
-              },
-            },
             images: {
               where: { isPrimary: true },
               select: { imageUrl: true },
@@ -174,9 +158,7 @@ export class BookingService {
         bookingNumber,
         displayStatus,
         durationHours,
-        venueName: booking.field.venue.name,
         fieldName: booking.field.name,
-        venueAddress: booking.field.venue.address,
         primaryImage: booking.field.images[0]?.imageUrl || null,
       },
     };
@@ -256,13 +238,6 @@ export class BookingService {
               id: true,
               name: true,
               type: true,
-              venue: {
-                select: {
-                  id: true,
-                  name: true,
-                  address: true,
-                },
-              },
               images: {
                 where: { isPrimary: true },
                 select: { imageUrl: true },
@@ -303,7 +278,6 @@ export class BookingService {
         id: booking.id,
         bookingNumber,
         fieldName: booking.field.name,
-        venueName: booking.field.venue.name,
         status: displayStatus,
         date: booking.startTime,
         startTime: booking.startTime,
@@ -360,15 +334,6 @@ export class BookingService {
             type: true,
             lengthMeter: true,
             widthMeter: true,
-            venue: {
-              select: {
-                id: true,
-                name: true,
-                address: true,
-                latitude: true,
-                longitude: true,
-              },
-            },
             images: {
               orderBy: [
                 { isPrimary: 'desc' },
@@ -425,9 +390,7 @@ export class BookingService {
         bookingNumber,
         displayStatus,
         durationHours,
-        venueName: booking.field.venue.name,
         fieldName: booking.field.name,
-        venueAddress: booking.field.venue.address,
         primaryImage: booking.field.images[0]?.imageUrl || null,
       },
     };
@@ -484,12 +447,6 @@ export class BookingService {
           select: {
             id: true,
             name: true,
-            venue: {
-              select: {
-                id: true,
-                name: true,
-              },
-            },
           },
         },
       },
@@ -547,11 +504,6 @@ export class BookingService {
           select: {
             id: true,
             name: true,
-            venue: {
-              select: {
-                name: true,
-              },
-            },
           },
         },
       },

@@ -82,19 +82,14 @@ export class FieldsService {
   }
 
   async create(dto: CreateFieldDto) {
-    const { venueId, name, type, isActive, prices, lengthMeter, widthMeter, imageUrls } = dto;
-
-    const venue = await this.prisma.venue.findUnique({ where: { id: venueId } });
-    if (!venue) {
-      throw new NotFoundException(`Venue dengan ID "${venueId}" tidak ditemukan`);
-    }
+    const { name, type, isActive, prices, lengthMeter, widthMeter, imageUrls } = dto;
 
     const existing = await this.prisma.field.findFirst({
-      where: { venueId, name },
+      where: { name },
     });
     if (existing) {
       throw new ConflictException(
-        `Field dengan nama "${name}" sudah ada di venue ini`,
+        `Field dengan nama "${name}" sudah ada`,
       );
     }
 
@@ -118,7 +113,6 @@ export class FieldsService {
 
     const field = await this.prisma.field.create({
       data: {
-        venueId,
         name,
         type,
         ...(isActive !== undefined ? { isActive } : {}),
@@ -149,7 +143,6 @@ export class FieldsService {
           : {}),
       },
       include: {
-        venue: { select: { id: true, name: true } },
         prices: { orderBy: [{ dayType: 'asc' }, { startHour: 'asc' }] },
         images: { orderBy: [{ isPrimary: 'desc' }, { order: 'asc' }, { createdAt: 'asc' }] },
         _count: { select: { bookings: true } },
@@ -168,7 +161,6 @@ export class FieldsService {
     page?: number;
     limit?: number;
     search?: string;
-    venueId?: string;
     type?: string;
     isActive?: boolean;
   }) {
@@ -176,7 +168,6 @@ export class FieldsService {
       page = 1,
       limit = 10,
       search,
-      venueId,
       type,
       isActive,
     } = params;
@@ -184,15 +175,11 @@ export class FieldsService {
     const skip = (page - 1) * limit;
 
     const where: any = {
-      ...(venueId ? { venueId } : {}),
       ...(type ? { type } : {}),
       ...(isActive !== undefined ? { isActive } : {}),
       ...(search
         ? {
-            OR: [
-              { name: { contains: search } },
-              { venue: { name: { contains: search } } },
-            ],
+            name: { contains: search },
           }
         : {}),
     };
@@ -201,7 +188,6 @@ export class FieldsService {
       this.prisma.field.findMany({
         where,
         include: {
-          venue: { select: { id: true, name: true } },
           prices: { orderBy: [{ dayType: 'asc' }, { startHour: 'asc' }] },
           images: { orderBy: [{ isPrimary: 'desc' }, { order: 'asc' }, { createdAt: 'asc' }] },
           _count: { select: { bookings: true } },
@@ -229,7 +215,6 @@ export class FieldsService {
     const field = await this.prisma.field.findUnique({
       where: { id },
       include: {
-        venue: { select: { id: true, name: true } },
         prices: { orderBy: [{ dayType: 'asc' }, { startHour: 'asc' }] },
         images: { orderBy: [{ isPrimary: 'desc' }, { order: 'asc' }, { createdAt: 'asc' }] },
         _count: { select: { bookings: true } },
@@ -253,17 +238,13 @@ export class FieldsService {
       throw new NotFoundException(`Field dengan ID "${id}" tidak ditemukan`);
     }
 
-    if (dto.venueId && dto.venueId !== existing.venueId) {
-      throw new BadRequestException('venueId tidak boleh diubah melalui endpoint update');
-    }
-
     if (dto.name && dto.name !== existing.name) {
       const conflict = await this.prisma.field.findFirst({
-        where: { venueId: existing.venueId, name: dto.name },
+        where: { name: dto.name },
       });
       if (conflict) {
         throw new ConflictException(
-          `Field dengan nama "${dto.name}" sudah ada di venue ini`,
+          `Field dengan nama "${dto.name}" sudah ada`,
         );
       }
     }
@@ -342,7 +323,6 @@ export class FieldsService {
                 : {}),
             },
             include: {
-              venue: { select: { id: true, name: true } },
               prices: { orderBy: [{ dayType: 'asc' }, { startHour: 'asc' }] },
               images: {
                 orderBy: [{ isPrimary: 'desc' }, { order: 'asc' }, { createdAt: 'asc' }],
@@ -355,7 +335,6 @@ export class FieldsService {
           where: { id },
           data: updateData,
           include: {
-            venue: { select: { id: true, name: true } },
             prices: { orderBy: [{ dayType: 'asc' }, { startHour: 'asc' }] },
             images: { orderBy: [{ isPrimary: 'desc' }, { order: 'asc' }, { createdAt: 'asc' }] },
             _count: { select: { bookings: true } },

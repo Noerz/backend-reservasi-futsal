@@ -41,17 +41,6 @@ export class AdminAuthService {
         throw new NotFoundException('Role tidak ditemukan');
       }
 
-      // Check if venue exists (if provided)
-      if (venueId) {
-        const venue = await this.prisma.venue.findUnique({
-          where: { id: venueId },
-        });
-
-        if (!venue) {
-          throw new NotFoundException('Venue tidak ditemukan');
-        }
-      }
-
       // Hash password
       const hashedPassword = await bcrypt.hash(password, 10);
 
@@ -62,26 +51,14 @@ export class AdminAuthService {
           password: hashedPassword,
           name,
           roleId,
-          venueId,
         },
-        select: {
-          id: true,
-          email: true,
-          name: true,
+        include: {
           role: {
             select: {
               id: true,
               name: true,
             },
           },
-          venue: {
-            select: {
-              id: true,
-              name: true,
-            },
-          },
-          createdAt: true,
-          updatedAt: true,
         },
       });
 
@@ -95,7 +72,7 @@ export class AdminAuthService {
         data: {
           id: admin.id,
           name: admin.name,
-          role: admin.role.name,
+          role: admin.role?.name || '',
           access_token: token.access_token,
         },
       };
@@ -106,7 +83,11 @@ export class AdminAuthService {
       ) {
         throw error;
       }
-      this.logger.error(`Failed to register admin: ${error.message}`, error.stack, 'AdminAuth');
+      this.logger.error(
+        `Failed to register admin: ${error.message}`,
+        error.stack,
+        'AdminAuth',
+      );
       throw error;
     }
   }
@@ -125,17 +106,14 @@ export class AdminAuthService {
               name: true,
             },
           },
-          venue: {
-            select: {
-              id: true,
-              name: true,
-            },
-          },
         },
       });
 
       if (!admin) {
-        this.logger.warn(`Login attempt failed - Admin not found: ${email}`, 'AdminAuth');
+        this.logger.warn(
+          `Login attempt failed - Admin not found: ${email}`,
+          'AdminAuth',
+        );
         throw new UnauthorizedException('Email atau password salah');
       }
 
@@ -143,7 +121,10 @@ export class AdminAuthService {
       const isPasswordValid = await bcrypt.compare(password, admin.password);
 
       if (!isPasswordValid) {
-        this.logger.warn(`Login attempt failed - Invalid password: ${email}`, 'AdminAuth');
+        this.logger.warn(
+          `Login attempt failed - Invalid password: ${email}`,
+          'AdminAuth',
+        );
         throw new UnauthorizedException('Email atau password salah');
       }
 
@@ -165,7 +146,11 @@ export class AdminAuthService {
       if (error instanceof UnauthorizedException) {
         throw error;
       }
-      this.logger.error(`Failed to login admin: ${error.message}`, error.stack, 'AdminAuth');
+      this.logger.error(
+        `Failed to login admin: ${error.message}`,
+        error.stack,
+        'AdminAuth',
+      );
       throw error;
     }
   }
@@ -185,13 +170,7 @@ export class AdminAuthService {
               description: true,
             },
           },
-          venue: {
-            select: {
-              id: true,
-              name: true,
-              address: true,
-            },
-          },
+
           createdAt: true,
           updatedAt: true,
         },
@@ -209,7 +188,11 @@ export class AdminAuthService {
       if (error instanceof BadRequestException) {
         throw error;
       }
-      this.logger.error(`Failed to get admin profile: ${error.message}`, error.stack, 'AdminAuth');
+      this.logger.error(
+        `Failed to get admin profile: ${error.message}`,
+        error.stack,
+        'AdminAuth',
+      );
       throw error;
     }
   }
