@@ -116,10 +116,6 @@ export class MobileFieldsService {
     limit?: number;
   }) {
     const { start, end } = this.resolveSlot(params);
-    const page = params.page ?? 1;
-    const limit = params.limit ?? 20;
-    const skip = (page - 1) * limit;
-
     const where: any = {
       isActive: true,
       ...(params.search
@@ -129,21 +125,17 @@ export class MobileFieldsService {
         : {}),
     };
 
-    const [fields, total] = await Promise.all([
-      this.prisma.field.findMany({
-        where,
-        include: {
-          prices: { orderBy: [{ dayType: 'asc' }, { startHour: 'asc' }] },
-          images: { orderBy: [{ isPrimary: 'desc' }, { order: 'asc' }, { createdAt: 'asc' }] },
-        },
-        orderBy: [{ createdAt: 'desc' }],
-        skip,
-        take: limit,
-      }),
-      this.prisma.field.count({ where }),
-    ]);
+    // Fetch ALL fields first
+    const allFields = await this.prisma.field.findMany({
+      where,
+      include: {
+        prices: { orderBy: [{ dayType: 'asc' }, { startHour: 'asc' }] },
+        images: { orderBy: [{ isPrimary: 'desc' }, { order: 'asc' }, { createdAt: 'asc' }] },
+      },
+      orderBy: [{ createdAt: 'desc' }],
+    });
 
-    const fieldIds = fields.map((f) => f.id);
+    const fieldIds = allFields.map((f) => f.id);
 
     // Find any booking that overlaps the slot
     const busyBookings = fieldIds.length
@@ -159,7 +151,8 @@ export class MobileFieldsService {
 
     const busySet = new Set(busyBookings.map((b) => b.fieldId));
 
-    const mapped = fields
+    // Map all fields
+    let filteredFields = allFields
       .map((f) => {
         const isAvailable = !busySet.has(f.id);
         const pricePerHour = this.getPricePerHourForSlot({
@@ -178,12 +171,10 @@ export class MobileFieldsService {
             lengthMeter: f.lengthMeter ?? null,
             widthMeter: f.widthMeter ?? null,
           },
-          pricePerHour,
+          pricePerHour, // bisa null jika tidak ada harga untuk slot ini
           isAvailable,
         };
       })
-      // Filter out fields that don't have a price for this slot
-      .filter((x) => x.pricePerHour !== null)
       .filter((x) => (params.onlyAvailable ? x.isAvailable : true))
       .sort((a, b) => {
         // Available first
@@ -192,13 +183,20 @@ export class MobileFieldsService {
         return a.name.localeCompare(b.name);
       });
 
+    // Apply pagination AFTER filtering
+    const page = params.page ?? 1;
+    const limit = params.limit ?? 20;
+    const total = filteredFields.length;
+    const skip = (page - 1) * limit;
+    const paginatedFields = filteredFields.slice(skip, skip + limit);
+
     return {
       message: 'Daftar lapangan (mobile) berhasil diambil',
       slot: {
         startTime: start.toISOString(),
         endTime: end.toISOString(),
       },
-      data: mapped,
+      data: paginatedFields,
       meta: {
         total,
         page,
