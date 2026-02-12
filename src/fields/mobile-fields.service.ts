@@ -17,6 +17,13 @@ function roundUpToNextHour(date: Date) {
   return d;
 }
 
+function getLocalHour(date: Date): number {
+  // Assuming WIB (UTC+7)
+  const utcHour = date.getUTCHours();
+  const wibHour = (utcHour + 7) % 24;
+  return wibHour;
+}
+
 function parseLocalDateYYYYMMDD(value: string): { year: number; month: number; day: number } {
   const match = /^\d{4}-\d{2}-\d{2}$/.exec(value);
   if (!match) {
@@ -93,15 +100,18 @@ export class MobileFieldsService {
     prices: { dayType: DayType; startHour: number; endHour: number; price: number }[];
     slotStart: Date;
   }): number | null {
-    const { prices, slotStart } = input;
-    const dayType: DayType = isWeekend(slotStart) ? DayType.WEEKEND : DayType.WEEKDAY;
-    const hour = slotStart.getHours();
-
-    const match = prices.find(
-      (p) => p.dayType === dayType && p.startHour <= hour && p.endHour > hour,
-    );
-
-    return match ? match.price : null;
+    const { prices } = input;
+    
+    // Kembalikan harga pertama yang tersedia (WEEKDAY jam 8-17 sebagai default)
+    // Tidak peduli jam berapa user akses
+    if (prices.length === 0) return null;
+    
+    // Cari harga WEEKDAY terlebih dahulu
+    const weekdayPrice = prices.find(p => p.dayType === DayType.WEEKDAY);
+    if (weekdayPrice) return weekdayPrice.price;
+    
+    // Kalau tidak ada WEEKDAY, ambil yang pertama
+    return prices[0].price;
   }
 
   async listMobileFields(params: {
